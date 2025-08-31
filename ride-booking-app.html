@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anyway - All-in-One Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d1b2a;
+            --bg-secondary: #1b263b;
+            --text-primary: #e0e1dd;
+            --text-secondary: #a9b4c2;
+            --gold-accent: #d4af37;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        
+        /* --- Map Container --- */
+        .map-container {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-color: var(--bg-secondary);
+        }
+
+        /* --- View Containers --- */
+        .top-level-view { display: none; height: 100vh; overflow: hidden; }
+        .top-level-view.active { display: block; }
+
+        .main-view { display: none; height: calc(100vh - 64px); overflow: hidden; }
+        .main-view.active { display: block; }
+        #admin-view.active { display: flex; }
+
+        /* --- Shared Styles --- */
+        .gold-accent { color: var(--gold-accent); }
+        .bg-gold { background-color: var(--gold-accent); }
+        .border-gold { border-color: var(--gold-accent); }
+        .app-screen, .admin-section { display: none; }
+        .app-screen.active, .admin-section.active { display: flex; }
+        
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .ride-request-modal { animation: slideUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        
+        /* --- Driver App Specific --- */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--gold-accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- Admin Panel Specific --- */
+        .sidebar-link { transition: all 0.2s ease-in-out; }
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: var(--bg-primary);
+            color: var(--gold-accent);
+            border-right: 3px solid var(--gold-accent);
+        }
+        .stat-card {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid #415a77;
+        }
+        .modal-backdrop {
+            display: none; position: fixed; inset: 0;
+            background-color: rgba(0,0,0,0.7); z-index: 50;
+            justify-content: center; align-items: center;
+        }
+        .modal-backdrop.active { display: flex; }
+        .modal-content {
+            background-color: var(--bg-secondary);
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Home View -->
+    <div id="home-view" class="top-level-view active">
+        <div class="flex flex-col items-center justify-center h-full p-4">
+            <h1 class="text-6xl font-bold mb-4 gold-accent">ANYWAY</h1>
+            <p class="text-secondary mb-12 text-lg">The All-in-One Taxi Platform</p>
+            <div class="w-full max-w-md space-y-4">
+                <button onclick="app.launch('rider')" class="w-full text-left flex items-center bg-secondary p-6 rounded-xl shadow-lg border border-gray-700 hover:border-gold transition group">
+                    <div class="pr-6"><svg class="w-10 h-10 gold-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>
+                    <div><h2 class="text-2xl font-bold text-primary">Open Rider App</h2><p class="text-secondary group-hover:text-primary transition">Book a ride and travel in luxury.</p></div>
+                </button>
+                <button onclick="app.launch('driver')" class="w-full text-left flex items-center bg-secondary p-6 rounded-xl shadow-lg border border-gray-700 hover:border-gold transition group">
+                    <div class="pr-6"><svg class="w-10 h-10 gold-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.789-2.756 9.35A1.5 1.5 0 017.5 21H6a1.5 1.5 0 01-1.5-1.5v-1.129a1.5 1.5 0 01.39-1.047L9 12.5M12 11V3m0 8h.01M12 11c0-3.517 1.009-6.789 2.756-9.35A1.5 1.5 0 0116.5 3H18a1.5 1.5 0 011.5 1.5v1.129a1.5 1.5 0 01-.39 1.047L15 12.5"></path></svg></div>
+                    <div><h2 class="text-2xl font-bold text-primary">Open Driver App</h2><p class="text-secondary group-hover:text-primary transition">Go online and start earning.</p></div>
+                </button>
+                <button onclick="app.launch('admin')" class="w-full text-left flex items-center bg-secondary p-6 rounded-xl shadow-lg border border-gray-700 hover:border-gold transition group">
+                    <div class="pr-6"><svg class="w-10 h-10 gold-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                    <div><h2 class="text-2xl font-bold text-primary">Open Admin Panel</h2><p class="text-secondary group-hover:text-primary transition">Manage your entire operation.</p></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login View -->
+    <div id="login-view" class="top-level-view">
+        <div class="flex flex-col items-center justify-center h-full p-4">
+            <h1 class="text-5xl font-bold mb-2 gold-accent">ANYWAY</h1>
+            <h2 id="login-title" class="text-secondary text-2xl mb-8">Platform Login</h2>
+            <div class="w-full max-w-sm bg-secondary p-8 rounded-2xl shadow-lg border border-gray-700">
+                 <button onclick="app.goHome()" class="absolute top-4 left-4 text-secondary hover:text-primary transition">&larr; Back</button>
+                <div class="mb-4 mt-8">
+                    <label for="mobile" class="block text-sm font-medium text-secondary mb-2">Mobile Number</label>
+                    <input type="tel" id="mobile" class="w-full bg-gray-800 text-white p-3 rounded-lg border-2 border-gray-700 focus:border-gold focus:ring-0 transition" placeholder="e.g., 111">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-secondary mb-2">Password</label>
+                    <input type="password" id="password" class="w-full bg-gray-800 text-white p-3 rounded-lg border-2 border-gray-700 focus:border-gold focus:ring-0 transition" placeholder="e.g., 111">
+                </div>
+                <button onclick="app.login()" class="w-full bg-gold text-primary font-bold py-3 rounded-lg text-lg hover:opacity-90 transition">Login</button>
+                <p id="login-error" class="text-red-500 text-sm text-center mt-4 h-4"></p>
+            </div>
+            <div class="text-center mt-6 text-secondary text-sm p-4 bg-black/20 rounded-lg">
+                <p class="font-bold mb-2">Demo Credentials:</p>
+                <p><span class="font-semibold">Rider:</span> 111 / 111</p>
+                <p><span class="font-semibold">Driver:</span> 222 / 222</p>
+                <p><span class="font-semibold">Admin:</span> 333 / 333</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Platform View -->
+    <div id="platform-view" class="top-level-view">
+        <header class="h-16 bg-gray-900 flex items-center justify-between p-4 border-b border-gray-700">
+            <button onclick="app.goHome()" class="px-3 md:px-4 py-2 rounded-lg text-sm font-semibold transition bg-gray-700 hover:bg-gray-600 flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Home
+            </button>
+            <h2 id="header-title" class="text-lg font-bold gold-accent"></h2>
+            <div class="w-24"></div> <!-- Spacer -->
+        </header>
+
+        <main>
+            <!-- RIDER APP VIEW -->
+            <div id="rider-view" class="main-view">
+                 <div class="max-w-md mx-auto h-full bg-[#0d1b2a] shadow-2xl flex flex-col overflow-hidden relative">
+                    <div id="rider-map-container" class="map-container"></div>
+                    <!-- Main Screen -->
+                    <div id="rider-main-screen" class="app-screen active z-10 flex-col h-full justify-end p-4 pb-8">
+                        <div class="bg-[#1b263b]/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-700">
+                            <h1 class="text-3xl font-bold mb-1">Welcome to <span class="gold-accent">Anyway</span></h1>
+                            <p class="text-gray-300 mb-6">Your premium ride awaits in Indore.</p>
+                            <div class="relative">
+                                <input type="text" id="destination-input" placeholder="Where to?" class="w-full bg-gray-800 text-white placeholder-gray-400 p-4 rounded-lg border-2 border-transparent focus:border-gold focus:ring-0 transition">
+                                <button onclick="riderApp.requestRide()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-gold text-[#0d1b2a] font-bold p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Ride Selection Screen -->
+                    <div id="rider-selection-screen" class="app-screen z-10 flex-col h-full justify-end">
+                        <div class="bg-[#1b263b]/80 backdrop-blur-sm p-4 rounded-t-2xl shadow-lg border-t border-gray-700">
+                            <h2 class="text-2xl font-bold text-center mb-4">Choose Your Ride</h2>
+                            <div id="ride-options-container" class="space-y-3"></div>
+                            <button onclick="riderApp.confirmRideSelection()" class="w-full bg-gold text-[#0d1b2a] font-bold py-4 mt-4 rounded-lg text-lg hover:opacity-90 transition">Confirm Booking</button>
+                            <button onclick="riderApp.showScreen('rider-main-screen')" class="w-full text-gray-400 py-2 mt-2 rounded-lg text-sm">Cancel</button>
+                        </div>
+                    </div>
+                    <!-- Payment Screen -->
+                    <div id="rider-payment-screen" class="app-screen z-10 flex-col h-full justify-end">
+                        <div class="bg-[#1b263b]/80 backdrop-blur-sm p-4 rounded-t-2xl shadow-lg border-t border-gray-700">
+                            <h2 class="text-2xl font-bold text-center mb-4">Select Payment</h2>
+                            <div id="payment-options-container" class="space-y-3"></div>
+                            <div class="mt-4 pt-4 border-t border-gray-600 flex justify-between items-center">
+                                <p class="text-lg text-secondary">Total Fare:</p>
+                                <p id="payment-final-fare" class="text-2xl font-bold gold-accent">₹185.00</p>
+                            </div>
+                            <button onclick="riderApp.finalizeBooking()" class="w-full bg-gold text-[#0d1b2a] font-bold py-4 mt-4 rounded-lg text-lg hover:opacity-90 transition">Confirm & Request</button>
+                            <button onclick="riderApp.showScreen('rider-selection-screen')" class="w-full text-gray-400 py-2 mt-2 rounded-lg text-sm">Back</button>
+                        </div>
+                    </div>
+                    <!-- Live Ride Screen -->
+                    <div id="rider-live-ride-screen" class="app-screen z-10 flex-col h-full justify-end">
+                         <div class="absolute top-10 left-1/2 -translate-x-1/2 bg-[#1b263b]/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-700 text-center"><p class="text-gray-300">Your driver is arriving in</p><h2 class="text-3xl font-bold gold-accent">3 mins</h2></div>
+                         <div class="bg-[#1b263b]/80 backdrop-blur-sm p-4 rounded-t-2xl shadow-lg border-t border-gray-700"><div class="flex items-center"><img src="https://placehold.co/64x64/778da9/FFFFFF?text=Driver" class="rounded-full w-16 h-16 border-2 border-gold" alt="Driver photo"><div class="ml-4"><h3 class="text-xl font-bold">Rohan S.</h3><p class="text-gray-300">Gold Toyota Camry</p><p class="font-bold gold-accent">★ 4.9</p></div><div class="ml-auto text-right"><p class="text-lg font-bold">UP 78 XY 1234</p><div class="flex justify-end space-x-2 mt-2"><button class="bg-gray-700 p-2 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button><button class="bg-gray-700 p-2 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></button></div></div></div></div>
+                    </div>
+                    <!-- Ride Complete Screen -->
+                    <div id="rider-complete-screen" class="app-screen z-10 flex-col h-full justify-center items-center p-4">
+                        <div class="bg-[#1b263b]/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-700 text-center w-full max-w-sm"><h2 class="text-3xl font-bold mb-2">You've Arrived</h2><p class="text-gray-300 mb-4">Total Fare: <span class="font-bold text-white text-xl" id="final-fare">₹185.00</span></p><p class="mb-2 text-lg">How was your ride with Rohan?</p><div class="flex justify-center text-4xl mb-4 space-x-2 text-gray-600"><span class="star cursor-pointer" onclick="riderApp.rate(1)">★</span><span class="star cursor-pointer" onclick="riderApp.rate(2)">★</span><span class="star cursor-pointer" onclick="riderApp.rate(3)">★</span><span class="star cursor-pointer" onclick="riderApp.rate(4)">★</span><span class="star cursor-pointer" onclick="riderApp.rate(5)">★</span></div><button onclick="riderApp.finishRide()" class="w-full bg-gold text-[#0d1b2a] font-bold py-3 mt-4 rounded-lg text-lg hover:opacity-90 transition">Submit Rating</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DRIVER APP VIEW -->
+            <div id="driver-view" class="main-view">
+                <div class="max-w-md mx-auto h-full bg-[#0d1b2a] shadow-2xl flex flex-col overflow-hidden relative">
+                    <div id="driver-map-container" class="map-container"></div>
+                    <div id="driver-offline-screen" class="app-screen active flex-col h-full justify-between items-center p-8 z-10"><div class="text-center"><h1 class="text-3xl font-bold mt-16">You are Offline</h1><p class="text-gray-400">Go online to start receiving ride requests.</p></div><div class="text-center"><p class="text-gray-400">TODAY'S EARNINGS</p><p class="text-5xl font-bold" id="todays-earnings">₹0.00</p></div><button onclick="driverApp.goOnline()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-lg text-2xl transition">GO ONLINE</button></div>
+                    <div id="driver-online-screen" class="app-screen flex-col h-full justify-between items-center p-8 z-10"><div class="text-center"><h1 class="text-3xl font-bold mt-16">You are Online</h1><p class="text-gray-400">Searching for nearby riders...</p></div><div class="loader my-8"></div><button onclick="driverApp.goOffline()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-6 rounded-lg text-2xl transition">GO OFFLINE</button></div>
+                    <div id="driver-ride-request-screen" class="app-screen absolute inset-0 z-20 bg-black/50 backdrop-blur-sm justify-end"><div class="ride-request-modal bg-[#1b263b] w-full p-6 rounded-t-2xl border-t-2 border-gold"><div class="text-center mb-4"><p class="text-lg text-gray-300">New Ride Request</p><p class="text-4xl font-bold gold-accent" id="ride-fare">₹185.00</p></div><div class="bg-gray-800 p-4 rounded-lg mb-4"><div><p class="text-sm text-gray-400">PICKUP</p><p class="font-semibold text-lg">Vijay Nagar (2.1 km away)</p></div><div class="border-t border-gray-700 my-3"></div><div><p class="text-sm text-gray-400">DESTINATION</p><p class="font-semibold text-lg">MG Road</p></div></div><div class="flex space-x-4"><button onclick="driverApp.rejectRide()" class="w-1/2 bg-gray-600 hover:bg-gray-700 font-bold py-4 rounded-lg text-lg transition">REJECT</button><button onclick="driverApp.acceptRide()" class="w-1/2 bg-green-600 hover:bg-green-700 font-bold py-4 rounded-lg text-lg transition">ACCEPT</button></div></div></div>
+                    <div id="driver-live-trip-screen" class="app-screen flex-col h-full justify-between"><div class="bg-[#1b263b] p-4 text-center z-10"><p class="text-sm text-gray-400" id="trip-stage-instruction">DRIVE TO PICKUP</p><p class="font-bold text-xl" id="trip-stage-address">Priya K. at Vijay Nagar</p></div><div class="flex-grow bg-gray-700"></div><div class="bg-[#1b263b] p-4 z-10"><button id="trip-action-button" onclick="driverApp.progressTrip()" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-5 rounded-lg text-xl transition">ARRIVED AT PICKUP</button></div></div>
+                    <div id="driver-trip-summary-screen" class="app-screen flex-col h-full justify-center items-center p-8 text-center z-10"><h2 class="text-3xl font-bold mb-2">Trip Completed!</h2><p class="text-5xl font-bold gold-accent mb-8" id="trip-payout">₹185.00</p><div class="w-full bg-gray-800 p-4 rounded-lg text-left"><div class="flex justify-between items-center"><p class="text-gray-400">Base Fare</p><p class="font-semibold">₹160.00</p></div><div class="border-t border-gray-700 my-2"></div><div class="flex justify-between items-center"><p class="text-gray-400">Rider Tip</p><p class="font-semibold">₹25.00</p></div></div><button onclick="driverApp.finishTrip()" class="w-full bg-gold text-[#0d1b2a] font-bold py-4 mt-8 rounded-lg text-lg hover:opacity-90 transition">DONE</button></div>
+                </div>
+            </div>
+
+            <!-- ADMIN PANEL VIEW -->
+            <div id="admin-view" class="main-view">
+                 <aside class="w-64 flex-shrink-0 bg-gray-800 p-4 border-r border-gray-700"><h1 class="text-2xl font-bold text-center gold-accent mb-8">ANYWAY</h1><nav class="space-y-2"><a href="#" id="nav-dashboard" onclick="adminPanel.showSection('admin-dashboard', this)" class="sidebar-link active flex items-center p-3 rounded-l-lg"><svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a><a href="#" id="nav-drivers" onclick="adminPanel.showSection('admin-drivers', this)" class="sidebar-link flex items-center p-3 rounded-l-lg"><svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Drivers <span id="pending-badge" class="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">3</span></a></nav></aside>
+                <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+                    <div id="admin-dashboard" class="admin-section active flex-col"><h2 class="text-3xl font-bold mb-6">Dashboard</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="stat-card"><p class="text-sm text-secondary">TOTAL EARNINGS (TODAY)</p><p class="text-4xl font-bold gold-accent">₹12,450.00</p></div><div class="stat-card"><p class="text-sm text-secondary">COMPLETED RIDES (TODAY)</p><p class="text-4xl font-bold">68</p></div><div class="stat-card"><p class="text-sm text-secondary">DRIVERS ONLINE</p><p class="text-4xl font-bold">14</p></div></div><div class="bg-secondary p-4 rounded-lg border border-gray-700 h-96"><p class="font-semibold mb-2">Live Fleet Map - Indore</p><div id="admin-map-container" class="w-full h-full bg-gray-800 rounded"></div></div></div>
+                    <div id="admin-drivers" class="admin-section flex-col"><h2 class="text-3xl font-bold mb-6">Driver Management</h2><div class="bg-secondary p-4 rounded-lg border border-gray-700"><h3 class="font-bold text-xl mb-4">Pending Approvals (<span id="pending-count">3</span>)</h3><div id="pending-drivers-list" class="space-y-3"></div></div></div>
+                </main>
+            </div>
+        </main>
+    </div>
+    
+    <div id="approval-modal" class="modal-backdrop"><div class="modal-content w-full max-w-3xl rounded-lg p-6 border border-gray-700"><h3 class="text-2xl font-bold mb-4">Review Driver Application</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><h4 class="font-bold mb-2">Driver Details</h4><p><span class="text-secondary">Name:</span> <span id="modal-driver-name" class="font-semibold"></span></p><p><span class="text-secondary">Vehicle:</span> <span id="modal-driver-vehicle" class="font-semibold"></span></p><p><span class="text-secondary">Number:</span> <span id="modal-driver-plate" class="font-semibold"></span></p></div><div><h4 class="font-bold mb-2">Uploaded Documents</h4><ul class="list-disc list-inside text-secondary space-y-1"><li><a href="#" class="text-blue-400 hover:underline">Driver's License</a></li><li><a href="#" class="text-blue-400 hover:underline">Vehicle RC</a></li><li><a href="#" class="text-blue-400 hover:underline">Insurance Policy</a></li><li><a href="#" class="text-blue-400 hover:underline">Aadhar Card</a></li></ul></div></div><div class="mt-6 flex justify-end space-x-4"><button onclick="adminPanel.closeModal()" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Cancel</button><button onclick="adminPanel.processApplication('reject')" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition">Reject</button><button onclick="adminPanel.processApplication('approve')" class="px-6 py-2 rounded bg-green-600 hover:bg-green-700 transition font-bold">Approve</button></div></div></div>
+
+    <script>
+    // =============================================
+    // AUTHENTICATION LOGIC
+    // =============================================
+    const auth = {
+        currentUserRole: null,
+        login(mobile, password) {
+            if (mobile === '111' && password === '111') { this.currentUserRole = 'rider'; return 'rider'; }
+            if (mobile === '222' && password === '222') { this.currentUserRole = 'driver'; return 'driver'; }
+            if (mobile === '333' && password === '333') { this.currentUserRole = 'admin'; return 'admin'; }
+            return false;
+        },
+        logout() {
+            this.currentUserRole = null;
+        }
+    };
+
+    // =============================================
+    // MAIN APP CONTROLLER
+    // =============================================
+    const app = {
+        loginAttemptRole: null,
+        init() {
+            this.showTopLevelView('home-view');
+            riderApp.init();
+            driverApp.init();
+            adminPanel.init();
+        },
+        showTopLevelView(viewId) {
+            document.querySelectorAll('.top-level-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        },
+        launch(role) {
+            this.loginAttemptRole = role;
+            const title = role.charAt(0).toUpperCase() + role.slice(1);
+            document.getElementById('login-title').textContent = `${title} Login`;
+            document.getElementById('login-error').textContent = '';
+            document.getElementById('mobile').value = '';
+            document.getElementById('password').value = '';
+            this.showTopLevelView('login-view');
+        },
+        login() {
+            const mobile = document.getElementById('mobile').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+            
+            const loggedInRole = auth.login(mobile, password);
+
+            if (loggedInRole && loggedInRole === this.loginAttemptRole) {
+                this.showTopLevelView('platform-view');
+                let viewId, headerTitle;
+                if (loggedInRole === 'rider') { viewId = 'rider-view'; headerTitle = 'Rider App'; mapService.init('rider-map-container'); }
+                if (loggedInRole === 'driver') { viewId = 'driver-view'; headerTitle = 'Driver App'; mapService.init('driver-map-container'); }
+                if (loggedInRole === 'admin') { viewId = 'admin-view'; headerTitle = 'Admin Panel'; mapService.init('admin-map-container'); }
+                
+                mapService.startLiveTracking(); // Start live location simulation
+
+                document.querySelectorAll('.main-view').forEach(v => v.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                document.getElementById('header-title').textContent = headerTitle;
+            } else if (loggedInRole && loggedInRole !== this.loginAttemptRole) {
+                 errorEl.textContent = `Invalid credentials for a ${this.loginAttemptRole}.`;
+            } else {
+                errorEl.textContent = 'Invalid mobile number or password.';
+            }
+        },
+        goHome() {
+            auth.logout();
+            driverApp.goOffline(); 
+            mapService.stopLiveTracking(); // Stop live location simulation
+            this.showTopLevelView('home-view');
+        }
+    };
+
+    // =============================================
+    // GOOGLE MAP SERVICE
+    // =============================================
+    const mapService = {
+        map: null,
+        markers: [],
+        animationInterval: null,
+        darkMapStyle: [ { "elementType": "geometry", "stylers": [ { "color": "#242f3e" } ] }, { "elementType": "labels.text.fill", "stylers": [ { "color": "#746855" } ] }, { "elementType": "labels.text.stroke", "stylers": [ { "color": "#242f3e" } ] }, { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [ { "color": "#d59563" } ] }, { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [ { "color": "#d59563" } ] }, { "featureType": "poi.park", "elementType": "geometry", "stylers": [ { "color": "#263c3f" } ] }, { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [ { "color": "#6b9a76" } ] }, { "featureType": "road", "elementType": "geometry", "stylers": [ { "color": "#38414e" } ] }, { "featureType": "road", "elementType": "geometry.stroke", "stylers": [ { "color": "#212a37" } ] }, { "featureType": "road", "elementType": "labels.text.fill", "stylers": [ { "color": "#9ca5b3" } ] }, { "featureType": "road.highway", "elementType": "geometry", "stylers": [ { "color": "#746855" } ] }, { "featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [ { "color": "#1f2835" } ] }, { "featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [ { "color": "#f3d19c" } ] }, { "featureType": "transit", "elementType": "geometry", "stylers": [ { "color": "#2f3948" } ] }, { "featureType": "transit.station", "elementType": "labels.text.fill", "stylers": [ { "color": "#d59563" } ] }, { "featureType": "water", "elementType": "geometry", "stylers": [ { "color": "#17263c" } ] }, { "featureType": "water", "elementType": "labels.text.fill", "stylers": [ { "color": "#515c6d" } ] }, { "featureType": "water", "elementType": "labels.text.stroke", "stylers": [ { "color": "#17263c" } ] } ],
+        
+        init(containerId) {
+            if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                console.error("Google Maps script not loaded yet.");
+                document.getElementById(containerId).innerHTML = `<div class="w-full h-full flex items-center justify-center text-secondary"><p>Could not load map. API Key might be invalid.</p></div>`;
+                return;
+            }
+            const indoreCoords = { lat: 22.7196, lng: 75.8577 };
+            this.map = new google.maps.Map(document.getElementById(containerId), {
+                center: indoreCoords,
+                zoom: 13,
+                styles: this.darkMapStyle,
+                disableDefaultUI: true
+            });
+
+            // Simulate markers based on role
+            this.clearMarkers();
+            if(auth.currentUserRole === 'rider') {
+                this.addMarker(indoreCoords, 'Rider');
+                // Simulate nearby cars
+                this.addMarker({ lat: 22.725, lng: 75.86 }, 'Car');
+                this.addMarker({ lat: 22.71, lng: 75.85 }, 'Car');
+            } else if(auth.currentUserRole === 'driver') {
+                this.addMarker(indoreCoords, 'Driver');
+            } else if(auth.currentUserRole === 'admin') {
+                // Simulate online drivers
+                this.addMarker({ lat: 22.725, lng: 75.86 }, 'Driver');
+                this.addMarker({ lat: 22.71, lng: 75.85 }, 'Driver');
+                this.addMarker({ lat: 22.73, lng: 75.84 }, 'Driver');
+            }
+        },
+        
+        addMarker(position, type) {
+            const icons = {
+                Rider: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%23d4af37" stroke="black" stroke-width="1"><circle cx="12" cy="12" r="10"/></svg>',
+                Driver: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="%23d4af37" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+                Car: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="%23d4af37"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>'
+            };
+            const marker = new google.maps.Marker({
+                position: position,
+                map: this.map,
+                icon: {
+                    url: icons[type] || icons.Car,
+                    scaledSize: new google.maps.Size(32, 32)
+                }
+            });
+            this.markers.push({ marker, type });
+            return marker;
+        },
+
+        clearMarkers() {
+            this.markers.forEach(m => m.marker.setMap(null));
+            this.markers = [];
+        },
+        
+        startLiveTracking() {
+            this.stopLiveTracking(); // Ensure no multiple intervals are running
+            this.animationInterval = setInterval(() => {
+                this.markers.forEach(m => {
+                    // We only want to move cars and drivers, not the rider's pin
+                    if (m.type === 'Car' || m.type === 'Driver') {
+                        const currentPos = m.marker.getPosition();
+                        const newLat = currentPos.lat() + (Math.random() - 0.5) * 0.0005;
+                        const newLng = currentPos.lng() + (Math.random() - 0.5) * 0.0005;
+                        m.marker.setPosition({ lat: newLat, lng: newLng });
+                    }
+                });
+            }, 2000); // Update every 2 seconds
+        },
+
+        stopLiveTracking() {
+            if (this.animationInterval) {
+                clearInterval(this.animationInterval);
+                this.animationInterval = null;
+            }
+        }
+    };
+
+    // =============================================
+    // RIDER APP LOGIC
+    // =============================================
+    const riderApp = {
+        selectedRide: null, selectedPaymentMethod: null, userRating: 0,
+        paymentOptions: [ { id: 'wallet', name: 'Anyway Wallet', balance: '₹1,250', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1-.9-2-2-2z"/></svg>` }, { id: 'upi', name: 'UPI / Google Pay', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12v-2a2 2 0 1 1 4 0v2m-4-4a2 2 0 1 0-4 0v4H6.5a2.5 2.5 0 1 0 0 5h11a2.5 2.5 0 1 0 0-5H12Z"/></svg>` }, { id: 'card', name: 'Credit/Debit Card', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>` }, { id: 'cash', name: 'Cash', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2.5a2.5 2.5 0 1 1 0 5H2M10.1 4.1 14 2l3.9 2.1m-8 15.8 4-2.1 4 2.1m-7.9-15.7V22M14 2v20"/></svg>` }, ],
+        rideData: [ { id: 'moto', name: 'Anyway Moto', price: 65, eta: '3 mins', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18c.6-1.5 1.7-3 3.1-4.2"/><path d="M10.1 9.3c-.4.5-.8 1.1-1.1 1.7"/><path d="M14 4.5c.6.9 1.2 1.8 1.5 2.8"/><path d="M18.1 14.7c.3-.5.6-1 .8-1.5"/><path d="M21 18c-1-1.5-2.2-2.9-3.5-4.2"/><circle cx="7.5" cy="16.5" r="3.5"/><circle cx="16.5" cy="7.5" r="3.5"/><path d="m14 11-2.5 2.5"/><path d="m10 15 2-2"/></svg>` }, { id: 'sedan', name: 'Anyway Sedan', price: 185, eta: '5 mins', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4"/><path d="M21 17H3c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h18c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2Z"/><path d="M5 17a2 2 0 1 0-4 0"/><path d="M19 17a2 2 0 1 0 4 0"/></svg>` }, { id: 'xl', name: 'Anyway XL', price: 250, eta: '6 mins', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m12 0h-3.34a2 2 0 0 0-1.66.89L15 19H9l-1-2.11a2 2 0 0 0-1.66-.89H3c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h18c1.1 0 2 .9 2 2v7c0 1.1-.9 2-2 2Z"/><path d="M5 16a2 2 0 1 0-4 0"/><path d="M19 16a2 2 0 1 0 4 0"/></svg>` }, { id: 'luxe', name: 'Anyway Luxe', price: 450, eta: '8 mins', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 17 6-6-4-4-6 6-4-4"/></svg>` } ],
+        init() { this.showScreen('rider-main-screen'); },
+        showScreen(screenId) {
+            document.querySelectorAll('#rider-view .app-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        },
+        requestRide() {
+            if (document.getElementById('destination-input').value.trim() === '') return;
+            this.populateRideOptions(); this.showScreen('rider-selection-screen');
+        },
+        populateRideOptions() {
+            const container = document.getElementById('ride-options-container'); container.innerHTML = '';
+            this.rideData.forEach(ride => { const isSelected = this.selectedRide && this.selectedRide.id === ride.id; container.innerHTML += `<div onclick="riderApp.selectRide('${ride.id}')" class="flex items-center p-3 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-gold text-[#0d1b2a]' : 'bg-gray-800 hover:bg-gray-700'} border-2 ${isSelected ? 'border-transparent' : 'border-gray-700'}"><div class="text-3xl ${isSelected ? '' : 'gold-accent'}">${ride.icon}</div><div class="ml-4 flex-grow"><h4 class="font-bold text-lg">${ride.name}</h4></div><div class="text-right"><p class="font-bold text-lg">₹${ride.price.toFixed(2)}</p><p class="text-sm ${isSelected ? 'text-gray-800' : 'text-gray-400'}">${ride.eta}</p></div></div>`; });
+            if (!this.selectedRide) this.selectRide('sedan');
+        },
+        selectRide(rideId) { this.selectedRide = this.rideData.find(r => r.id === rideId); this.populateRideOptions(); },
+        confirmRideSelection() {
+            if (!this.selectedRide) return;
+            this.populatePaymentOptions(); document.getElementById('payment-final-fare').textContent = `₹${this.selectedRide.price.toFixed(2)}`; this.showScreen('rider-payment-screen');
+        },
+        populatePaymentOptions() {
+            const container = document.getElementById('payment-options-container'); container.innerHTML = '';
+            this.paymentOptions.forEach(option => { const isSelected = this.selectedPaymentMethod && this.selectedPaymentMethod.id === option.id; container.innerHTML += ` <div onclick="riderApp.selectPaymentMethod('${option.id}')" class="flex items-center p-3 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-gold text-[#0d1b2a]' : 'bg-gray-800 hover:bg-gray-700'} border-2 ${isSelected ? 'border-transparent' : 'border-gray-700'}"> <div class="text-2xl ${isSelected ? '' : 'gold-accent'}">${option.icon}</div> <div class="ml-4 flex-grow"> <h4 class="font-semibold text-lg">${option.name}</h4> ${option.balance ? `<p class="text-sm ${isSelected ? 'text-gray-800' : 'text-gray-400'}">Balance: ${option.balance}</p>` : ''} </div> ${isSelected ? '<div class="text-2xl text-current">✓</div>' : ''} </div>`; });
+            if (!this.selectedPaymentMethod) this.selectPaymentMethod('cash');
+        },
+        selectPaymentMethod(methodId) { this.selectedPaymentMethod = this.paymentOptions.find(p => p.id === methodId); this.populatePaymentOptions(); },
+        finalizeBooking() {
+            if (!this.selectedRide || !this.selectedPaymentMethod) return; this.showScreen('rider-live-ride-screen');
+            setTimeout(() => { document.getElementById('final-fare').textContent = `₹${this.selectedRide.price.toFixed(2)}`; this.showScreen('rider-complete-screen'); }, 8000);
+        },
+        rate(stars) { this.userRating = stars; document.querySelectorAll('#rider-view .star').forEach((star, index) => { star.classList.toggle('gold-accent', index < stars); star.classList.toggle('text-gray-600', index >= stars); }); },
+        finishRide() { this.selectedRide = null; this.userRating = 0; this.selectedPaymentMethod = null; document.getElementById('destination-input').value = ''; this.rate(0); this.showScreen('rider-main-screen'); }
+    };
+
+    // =============================================
+    // DRIVER APP LOGIC
+    // =============================================
+    const driverApp = {
+        state: 'offline', tripStage: 0, totalEarnings: 0, rideRequestTimeout: null,
+        init() { this.showScreen('driver-offline-screen'); },
+        showScreen(screenId) { document.querySelectorAll('#driver-view .app-screen').forEach(s => s.classList.remove('active')); document.getElementById(screenId).classList.add('active'); },
+        goOnline() { this.state = 'online'; this.showScreen('driver-online-screen'); this.rideRequestTimeout = setTimeout(() => this.showScreen('driver-ride-request-screen'), 5000); },
+        goOffline() { this.state = 'offline'; clearTimeout(this.rideRequestTimeout); this.showScreen('driver-offline-screen'); },
+        acceptRide() { this.state = 'in-ride'; this.tripStage = 0; this.showScreen('driver-live-trip-screen'); this.updateTripUI(); },
+        rejectRide() { this.showScreen('driver-online-screen'); this.rideRequestTimeout = setTimeout(() => this.showScreen('driver-ride-request-screen'), 8000); },
+        progressTrip() { this.tripStage++; this.updateTripUI(); },
+        updateTripUI() {
+            const stages = [ { instruction: "DRIVE TO PICKUP", address: "Priya K. at Vijay Nagar", button: "ARRIVED AT PICKUP", color: "bg-blue-600" }, { instruction: "AWAITING RIDER", address: "Vijay Nagar", button: "START TRIP", color: "bg-green-600" }, { instruction: "TRIP IN PROGRESS", address: "En route to MG Road", button: "END TRIP", color: "bg-red-600" }, ];
+            if (this.tripStage < stages.length) { const stage = stages[this.tripStage]; document.getElementById('trip-stage-instruction').textContent = stage.instruction; document.getElementById('trip-stage-address').textContent = stage.address; const button = document.getElementById('trip-action-button'); button.textContent = stage.button; button.className = `w-full ${stage.color} hover:opacity-90 font-bold py-5 rounded-lg text-xl transition`; } else { const tripEarning = 185.00; this.totalEarnings += tripEarning; document.getElementById('todays-earnings').textContent = `₹${this.totalEarnings.toFixed(2)}`; document.getElementById('trip-payout').textContent = `₹${tripEarning.toFixed(2)}`; this.showScreen('driver-trip-summary-screen'); }
+        },
+        finishTrip() { this.state = 'online'; this.tripStage = 0; this.goOnline(); }
+    };
+
+    // =============================================
+    // ADMIN PANEL LOGIC
+    // =============================================
+    const adminPanel = {
+        currentDriverId: null,
+        pendingDrivers: [ { id: 1, name: 'Suresh Verma', vehicle: 'Maruti Dzire', plate: 'MP 09 AB 1234' }, { id: 2, name: 'Amit Patel', vehicle: 'Honda Amaze', plate: 'MP 09 CD 5678' }, { id: 3, name: 'Kavita Singh', vehicle: 'TVS Apache', plate: 'MP 09 EF 9012' }, ],
+        init() { this.populatePendingDrivers(); },
+        showSection(sectionId, navElement) { document.querySelectorAll('#admin-view .admin-section').forEach(s => s.classList.remove('active')); document.getElementById(sectionId).classList.add('active'); document.querySelectorAll('#admin-view .sidebar-link').forEach(l => l.classList.remove('active')); if(navElement) navElement.classList.add('active'); },
+        populatePendingDrivers() {
+            const list = document.getElementById('pending-drivers-list'); list.innerHTML = '';
+            this.pendingDrivers.forEach(driver => { list.innerHTML += `<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg"><div><p class="font-bold">${driver.name}</p><p class="text-sm text-secondary">${driver.vehicle} - ${driver.plate}</p></div><button onclick="adminPanel.openModal(${driver.id})" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded transition">Review</button></div>`; });
+            const count = this.pendingDrivers.length; document.getElementById('pending-count').textContent = count; const badge = document.getElementById('pending-badge'); badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none';
+        },
+        openModal(driverId) { this.currentDriverId = driverId; const driver = this.pendingDrivers.find(d => d.id === driverId); if(driver) { document.getElementById('modal-driver-name').textContent = driver.name; document.getElementById('modal-driver-vehicle').textContent = driver.vehicle; document.getElementById('modal-driver-plate').textContent = driver.plate; document.getElementById('approval-modal').classList.add('active'); } },
+        closeModal() { document.getElementById('approval-modal').classList.remove('active'); this.currentDriverId = null; },
+        processApplication(action) {
+            const driverIndex = this.pendingDrivers.findIndex(d => d.id === this.currentDriverId);
+            if (driverIndex > -1) { const driverName = this.pendingDrivers[driverIndex].name; this.pendingDrivers.splice(driverIndex, 1); alert(`Driver ${driverName} has been ${action}ed.`); this.populatePendingDrivers(); this.closeModal(); }
+        }
+    };
+
+    // --- Make controllers globally accessible for onclick attributes ---
+    window.app = app;
+    window.riderApp = riderApp;
+    window.driverApp = driverApp;
+    window.adminPanel = adminPanel;
+
+    // --- INITIAL LOAD ---
+    document.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+    
+    <!-- IMPORTANT: The API key has been added below -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIS37ROEVIUPytC-ulNKTzC8kqnloSHWs&callback=initAppMaps"></script>
+    <script>
+        // Callback function for Google Maps API
+        window.initAppMaps = () => {
+             console.log("Google Maps API is ready.");
+        };
+    </script>
+
+</body>
+</html>
+
